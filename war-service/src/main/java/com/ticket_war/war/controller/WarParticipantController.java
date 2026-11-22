@@ -57,6 +57,20 @@ public class WarParticipantController {
                 .body(response);
     }
 
+    @PostMapping("/war-sessions/{warSessionId}/participants/access-link")
+    @Operation(summary = "Email a fresh participant access link when the address is registered")
+    @ApiResponses({
+            @ApiResponse(responseCode = "202", description = "The access link request was accepted"),
+            @ApiResponse(responseCode = "400", description = "Invalid email or request"),
+            @ApiResponse(responseCode = "404", description = "War Session not found")
+    })
+    public ResponseEntity<Void> requestAccessLink(
+            @PathVariable UUID warSessionId,
+            @Valid @RequestBody RegisterParticipantRequest request) {
+        warParticipantService.requestAccessLink(warSessionId, request);
+        return ResponseEntity.accepted().build();
+    }
+
     // Validate participant access token
     @PostMapping("/war/participants/validate-access")
     @Operation(summary = "Validate a participant access token")

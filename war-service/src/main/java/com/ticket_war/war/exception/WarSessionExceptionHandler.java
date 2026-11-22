@@ -1,5 +1,7 @@
 package com.ticket_war.war.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -14,6 +16,7 @@ import java.time.Instant;
 
 @RestControllerAdvice
 public class WarSessionExceptionHandler {
+    private static final Logger logger = LoggerFactory.getLogger(WarSessionExceptionHandler.class);
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiErrorResponse> handleResponseStatus(ResponseStatusException exception) {
@@ -42,6 +45,7 @@ public class WarSessionExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception) {
+        logger.error("Unexpected error while handling a War Service request.", exception);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected server error occurred.");
     }
 

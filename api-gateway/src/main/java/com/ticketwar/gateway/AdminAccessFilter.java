@@ -54,7 +54,8 @@ public class AdminAccessFilter implements WebFilter {
                         exchange.getRequest().getQueryParams().getFirst("status"))) {
             return false;
         }
-        if ("POST".equalsIgnoreCase(method) && path.matches("^/api/war-sessions/[^/]+/participants/register$")) {
+        if ("POST".equalsIgnoreCase(method)
+                && path.matches("^/api/war-sessions/[^/]+/participants/(register|access-link)$")) {
             return false;
         }
         if ("GET".equalsIgnoreCase(method) && path.matches("^/api/war-sessions/[^/]+$")) {

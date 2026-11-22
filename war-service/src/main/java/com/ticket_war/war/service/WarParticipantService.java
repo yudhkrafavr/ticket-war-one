@@ -104,6 +104,20 @@ public class WarParticipantService {
         }
     }
 
+    @Transactional
+    public void requestAccessLink(UUID warSessionId, RegisterParticipantRequest request) {
+        String email = normalizeAndValidateEmail(request.getEmail());
+        WarSession session = warSessionRepository.findById(warSessionId)
+                .orElseThrow(() -> sessionNotFound(warSessionId));
+
+        warParticipantRepository.findByWarSessionIdAndEmailForUpdate(warSessionId, email)
+                .ifPresent(participant -> {
+                    ParticipantAccessTokenUtil.GeneratedToken token = ParticipantAccessTokenUtil.generate();
+                    participant.setAccessTokenHash(token.hash());
+                    participantEmailService.registrationAccess(email, session.getName(), token.rawToken());
+                });
+    }
+
     @Transactional(readOnly = true)
     public ParticipantAccessValidationResponse validateAccess(String accessToken) {
         WarParticipant participant = findByAccessToken(accessToken);

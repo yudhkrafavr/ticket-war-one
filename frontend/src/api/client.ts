@@ -6,8 +6,9 @@ const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL
 const localGatewayUrl = 'http://localhost:8080'
 const useLocalDevProxy = import.meta.env.DEV && (!configuredBaseUrl || configuredBaseUrl.replace(/\/$/, '') === localGatewayUrl)
 
-function isParticipantRegistration(url: string, method: string | undefined) {
-  return method?.toLowerCase() === 'post' && /^\/api\/war-sessions\/[^/]+\/participants\/register$/.test(url)
+function isPublicParticipantEmailAction(url: string, method: string | undefined) {
+  return method?.toLowerCase() === 'post'
+    && /^\/api\/war-sessions\/[^/]+\/participants\/(?:register|access-link)$/.test(url)
 }
 
 function isPublicScheduledSessionList(url: string, method?: string, params?: unknown) {
@@ -19,7 +20,7 @@ function isPublicScheduledSessionList(url: string, method?: string, params?: unk
 }
 
 function isAdminApiRequest(url: string, method?: string, params?: unknown) {
-  if (isParticipantRegistration(url, method)) return false
+  if (isPublicParticipantEmailAction(url, method)) return false
   if (isPublicScheduledSessionList(url, method, params)) return false
   if (url === '/api/admin/auth/session') return true
 

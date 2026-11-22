@@ -95,6 +95,19 @@ public class WarParticipantRepository {
         return matches > 0;
     }
 
+    public Optional<WarParticipant> findByWarSessionIdAndEmailForUpdate(UUID warSessionId, String email) {
+        return entityManager.createQuery("""
+                        select participant from WarParticipant participant
+                        where participant.warSessionId = :sessionId and participant.email = :email
+                        """, WarParticipant.class)
+                .setParameter("sessionId", warSessionId)
+                .setParameter("email", email)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultList()
+                .stream()
+                .findFirst();
+    }
+
     public WarParticipant insert(WarParticipant participant) {
         entityManager.persist(participant);
         entityManager.flush();
