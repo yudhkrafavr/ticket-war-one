@@ -27,36 +27,36 @@ public class EventService {
         this.eventRepository = eventRepository;
     }
 
-    // Create a new event
     public EventResponse createEvent(CreateEventRequest request) {
         Event event = toEntity(request);
+        validateEventName(event.getName());
         validateTotalTickets(event.getTotalTickets());
-        validateRegistrationPeriod(event.getRegistrationStartAt(), event.getRegistrationEndAt());
+        validateRegistrationSchedule(
+                event.getRegistrationStartAt(),
+                event.getRegistrationEndAt(),
+                event.getEventDate()
+        );
 
         event.setStatus(EventStatus.DRAFT);
 
         return toResponse(eventRepository.save(event));
     }
 
-    // Get all events
     @Transactional(readOnly = true)
     public List<EventResponse> getAllEvents() {
         return toResponses(eventRepository.findAll());
     }
 
-    // Get event by ID
     @Transactional(readOnly = true)
     public EventResponse getEventById(UUID id) {
         return toResponse(findEventById(id));
     }
 
-    // Get events by status
     @Transactional(readOnly = true)
     public List<EventResponse> getEventsByStatus(EventStatus status) {
         return toResponses(eventRepository.findByStatus(status));
     }
 
-    // Update an existing event
     public EventResponse updateEvent(UUID id, UpdateEventRequest request) {
         Event existingEvent = findEventById(id);
 
@@ -68,8 +68,13 @@ public class EventService {
         }
 
         Event updatedEvent = toEntity(request);
+        validateEventName(updatedEvent.getName());
         validateTotalTickets(updatedEvent.getTotalTickets());
-        validateRegistrationPeriod(updatedEvent.getRegistrationStartAt(), updatedEvent.getRegistrationEndAt());
+        validateRegistrationSchedule(
+                updatedEvent.getRegistrationStartAt(),
+                updatedEvent.getRegistrationEndAt(),
+                updatedEvent.getEventDate()
+        );
 
         existingEvent.setName(updatedEvent.getName());
         existingEvent.setDescription(updatedEvent.getDescription());
@@ -93,23 +98,45 @@ public class EventService {
             );
         }
 
-        if (event.getName() == null || event.getName().isBlank()
-                || event.getEventDate() == null
-                || event.getRegistrationStartAt() == null
-                || event.getRegistrationEndAt() == null
-                || !event.getRegistrationEndAt().isAfter(event.getRegistrationStartAt())) {
+        validateEventName(event.getName());
+        validateTotalTickets(event.getTotalTickets());
+
+        if (event.getEventDate() == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Event information or registration period is invalid"
+                    "Event date is required"
             );
         }
+        if (!event.getEventDate().isAfter(Instant.now())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Event date must be in the future"
+            );
+        }
+        if (event.getRegistrationStartAt() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Registration start date is required"
+            );
+        }
+        if (event.getRegistrationEndAt() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Registration end date is required"
+            );
+        }
+
+        validateRegistrationSchedule(
+                event.getRegistrationStartAt(),
+                event.getRegistrationEndAt(),
+                event.getEventDate()
+        );
 
         event.setStatus(EventStatus.PUBLISHED);
 
         return toResponse(eventRepository.save(event));
     }
 
-    // Delete an event
     public void deleteEvent(UUID id) {
         Event event = findEventById(id);
 
@@ -140,12 +167,31 @@ public class EventService {
         }
     }
 
-    private void validateRegistrationPeriod(Instant registrationStartAt, Instant registrationEndAt) {
+    private void validateEventName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Event name must not be empty"
+            );
+        }
+    }
+
+    private void validateRegistrationSchedule(
+            Instant registrationStartAt,
+            Instant registrationEndAt,
+            Instant eventDate) {
         if (registrationStartAt != null && registrationEndAt != null
                 && !registrationEndAt.isAfter(registrationStartAt)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Registration end must be after registration start"
+            );
+        }
+        if (registrationEndAt != null && eventDate != null
+                && !registrationEndAt.isBefore(eventDate)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Registration must end before the event date"
             );
         }
     }
